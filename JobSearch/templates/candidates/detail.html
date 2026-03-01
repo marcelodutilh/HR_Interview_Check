@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ candidate.name }} — {{ search.title }} — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}">{{ search.title }}</a>
+  <span>/</span>
+  <span>{{ candidate.name }}</span>
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}" class="btn-back">← Back to {{ search.title }}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ candidate.name }}</h1>
+  <div class="btn-group">
+    <a href="{{ url_for('candidate_edit', candidate_id=candidate.id) }}" class="btn btn-outline">Edit</a>
+    <form method="post" action="{{ url_for('candidate_delete', candidate_id=candidate.id) }}"
+          onsubmit="return confirm('Delete {{ candidate.name }} and all their interviews?')">
+      <button class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% if candidate.notes %}
+<div class="info-box">
+  <h3>Notes</h3>
+  <p>{{ candidate.notes }}</p>
+</div>
+{% endif %}
+
+{% if competencies %}
+<section class="section">
+  <h2>Competencies Being Evaluated</h2>
+  <ul class="tag-list">
+    {% for c in competencies %}
+    <li class="tag">{{ c.name }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<!-- Interviews section -->
+<section class="section">
+  <div class="section-header">
+    <h2>Interviews <span class="badge">{{ interviews|length }}</span></h2>
+    <a href="{{ url_for('interview_new', candidate_id=candidate.id) }}" class="btn btn-sm btn-primary">+ Log Interview</a>
+  </div>
+
+  {% if interviews %}
+  <div class="interview-list">
+    {% for iv in interviews %}
+    <div class="interview-card">
+      <div class="interview-card-header">
+        <span class="interview-date">{{ iv.created_at[:16].replace('T', ' ') }}</span>
+        <div class="btn-group">
+          <a href="{{ url_for('interview_detail', interview_id=iv.id) }}" class="btn btn-xs">View</a>
+          <a href="{{ url_for('interview_edit', interview_id=iv.id) }}" class="btn btn-xs btn-outline">Edit</a>
+          <form method="post" action="{{ url_for('interview_delete', interview_id=iv.id) }}"
+                onsubmit="return confirm('Delete this interview?')">
+            <button class="btn btn-xs btn-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+      {% if iv.transcript %}
+      <p class="interview-preview text-muted">{{ iv.transcript[:200] }}{% if iv.transcript|length > 200 %}…{% endif %}</p>
+      {% else %}
+      <p class="text-muted">No transcript recorded.</p>
+      {% endif %}
+      {% if iv.ai_analysis %}
+      <span class="badge badge-green">AI analysis available</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted">No interviews logged yet. <a href="{{ url_for('interview_new', candidate_id=candidate.id) }}">Log the first one.</a></p>
+  {% endif %}
+</section>
+{% endblock %}

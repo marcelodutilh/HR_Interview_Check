@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Rubric — {{ search.title }} — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}">{{ search.title }}</a>
+  <span>/</span>
+  <span>Rubric</span>
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}" class="btn-back">← Back to {{ search.title }}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Evaluation Rubric</h1>
+    <p class="text-muted">{{ search.title }}</p>
+  </div>
+</div>
+
+<p class="help-text">
+  Define each competency and describe what a <strong>Strong</strong>, <strong>Acceptable</strong>,
+  and <strong>Weak</strong> response looks like. This rubric will appear as a reference when you log interviews.
+</p>
+
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<form method="post" id="rubric-form">
+  <input type="hidden" name="competencies" id="competencies-json" value="{{ raw }}" />
+
+  <div class="rubric-cards" id="rubric-cards">
+    {% for c in competencies %}
+    <div class="rubric-card">
+      <div class="rubric-card-header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <input type="text" class="comp-name-input"
+               placeholder="Competency name (e.g. Communication)"
+               value="{{ c.name }}" />
+        <button type="button" class="btn btn-xs btn-danger remove-comp">Remove</button>
+      </div>
+      <div class="rubric-levels">
+        <div class="rubric-level rubric-level--strong">
+          <div class="rubric-level-label">Strong</div>
+          <textarea class="comp-strong" rows="4"
+                    placeholder="What does a strong response look like?">{{ c.strong }}</textarea>
+        </div>
+        <div class="rubric-level rubric-level--acceptable">
+          <div class="rubric-level-label">Acceptable</div>
+          <textarea class="comp-acceptable" rows="4"
+                    placeholder="What does an acceptable response look like?">{{ c.acceptable }}</textarea>
+        </div>
+        <div class="rubric-level rubric-level--weak">
+          <div class="rubric-level-label">Weak</div>
+          <textarea class="comp-weak" rows="4"
+                    placeholder="What does a weak response look like?">{{ c.weak }}</textarea>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if not competencies %}
+  <p class="rubric-empty-hint" id="rubric-empty-hint">
+    No competencies yet — add one to get started.
+  </p>
+  {% endif %}
+
+  <div class="rubric-toolbar">
+    <button type="button" class="btn btn-outline" id="add-competency">+ Add Competency</button>
+    <div class="rubric-toolbar-actions">
+      <button type="submit" class="btn btn-primary">Save Rubric</button>
+      <a href="{{ url_for('job_search_detail', search_id=search.id) }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ search.title }} — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <span>{{ search.title }}</span>
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('index') }}" class="btn-back">← Back to All Searches</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ search.title }}</h1>
+  <div class="btn-group">
+    <a href="{{ url_for('job_search_edit', search_id=search.id) }}" class="btn btn-outline">Edit</a>
+    <form method="post" action="{{ url_for('job_search_delete', search_id=search.id) }}"
+          onsubmit="return confirm('Delete this job search and all its data?')">
+      <button class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% if search.description %}
+<p class="text-muted mb-lg">{{ search.description }}</p>
+{% endif %}
+
+<!-- Rubric section -->
+<section class="section">
+  <div class="section-header">
+    <h2>Evaluation Rubric</h2>
+    <a href="{{ url_for('rubric_edit', search_id=search.id) }}" class="btn btn-sm btn-outline">
+      {% if rubric %}Edit Rubric{% else %}+ Add Rubric{% endif %}
+    </a>
+  </div>
+  {% if competencies %}
+  <ul class="tag-list">
+    {% for c in competencies %}
+    <li class="tag">{{ c.name }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-muted">No rubric defined yet.
+    <a href="{{ url_for('rubric_edit', search_id=search.id) }}">Add competencies</a>
+    to score candidates consistently.
+  </p>
+  {% endif %}
+</section>
+
+<!-- Candidates section -->
+<section class="section" id="candidates-section"
+         data-search-id="{{ search.id }}">
+  <div class="section-header">
+    <h2>
+      Candidates
+      <span class="badge" id="candidate-count-badge">{{ candidates|length }}</span>
+    </h2>
+    <button class="btn btn-sm btn-primary" id="toggle-add-candidate-btn"
+            aria-expanded="false">
+      + Add Candidate
+    </button>
+  </div>
+
+  <!-- Inline add-candidate panel -->
+  <div class="inline-panel" id="add-candidate-panel" aria-hidden="true">
+    <form class="inline-form" id="add-candidate-form" novalidate>
+      <div class="inline-form-fields">
+        <div class="form-group">
+          <label for="cand-name">Full Name <span class="required">*</span></label>
+          <input type="text" id="cand-name" name="name"
+                 placeholder="e.g. Jane Smith" autocomplete="off" />
+          <p class="field-error" id="cand-name-error" hidden></p>
+        </div>
+        <div class="form-group">
+          <label for="cand-notes">Notes</label>
+          <input type="text" id="cand-notes" name="notes"
+                 placeholder="Resume highlights, referral info…" autocomplete="off" />
+        </div>
+      </div>
+      <div class="inline-form-actions">
+        <button type="submit" class="btn btn-primary btn-sm" id="add-candidate-submit-btn">
+          Add Candidate
+        </button>
+        <button type="button" class="btn btn-outline btn-sm"
+                id="cancel-add-candidate-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Candidates table -->
+  {% if candidates %}
+  <table class="table" id="candidates-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Notes</th>
+        <th>Added</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="candidates-tbody">
+      {% for c in candidates %}
+      <tr data-candidate-id="{{ c.id }}">
+        <td><a href="{{ url_for('candidate_detail', candidate_id=c.id) }}">{{ c.name }}</a></td>
+        <td class="text-muted">
+          {{ (c.notes or '')[:80] }}{% if c.notes and c.notes|length > 80 %}…{% endif %}
+        </td>
+        <td>{{ c.created_at[:10] }}</td>
+        <td>
+          <div class="btn-group">
+            <a href="{{ url_for('candidate_detail', candidate_id=c.id) }}" class="btn btn-xs">View</a>
+            <a href="{{ url_for('candidate_edit', candidate_id=c.id) }}" class="btn btn-xs btn-outline">Edit</a>
+            <form method="post" action="{{ url_for('candidate_delete', candidate_id=c.id) }}"
+                  onsubmit="return confirm('Delete {{ c.name }}?')">
+              <button class="btn btn-xs btn-danger">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-muted" id="no-candidates-msg">
+    No candidates yet.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <span>Settings</span>
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('index') }}" class="btn-back">← Back to All Searches</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Settings</h1>
+</div>
+
+<p class="help-text">
+  Enter your <strong>Anthropic API key</strong> to enable AI analysis and follow-up questions for interviews.
+  The key is stored in this app’s database and is not sent anywhere except to Anthropic’s API.
+  You can also set <code>ANTHROPIC_API_KEY</code> in the environment; the app uses that first.
+</p>
+
+{% if saved %}
+<div class="alert" style="background: rgba(63,185,80,.15); border-color: #3fb950; color: #3fb950;">
+  API key saved. AI features are now enabled.
+</div>
+{% endif %}
+{% if cleared %}
+<div class="alert" style="background: rgba(139,148,158,.15); border-color: var(--color-border); color: var(--color-muted);">
+  API key cleared.
+</div>
+{% endif %}
+
+<form method="post" class="form-card" style="max-width: 520px;">
+  <div class="form-group">
+    <label for="anthropic_api_key">Anthropic API key</label>
+    <input
+      type="password"
+      id="anthropic_api_key"
+      name="anthropic_api_key"
+      placeholder="{{ 'Enter a new key to replace the existing one' if has_key else 'sk-ant-...' }}"
+      autocomplete="off"
+    />
+    {% if has_key %}
+    <p class="field-hint">A key is already set. Enter a new value to replace it, or leave blank and save to clear.</p>
+    {% endif %}
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('index') }}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+{% endblock %}

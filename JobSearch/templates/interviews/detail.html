@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Interview — {{ candidate.name }} — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}">{{ search.title }}</a>
+  <span>/</span>
+  <a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}">{{ candidate.name }}</a>
+  <span>/</span>
+  <span>Interview</span>
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}" class="btn-back">← Back to {{ candidate.name }}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Interview</h1>
+    <p class="text-muted">{{ candidate.name }} · {{ search.title }}</p>
+  </div>
+  <div class="btn-group">
+    <a href="{{ url_for('interview_edit', interview_id=interview.id) }}" class="btn btn-outline">Edit Transcript</a>
+    <form method="post" action="{{ url_for('interview_delete', interview_id=interview.id) }}"
+          onsubmit="return confirm('Delete this interview record?')">
+      <button class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<dl class="meta-list">
+  <dt>Candidate</dt>
+  <dd><a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}">{{ candidate.name }}</a></dd>
+  <dt>Job Search</dt>
+  <dd><a href="{{ url_for('job_search_detail', search_id=search.id) }}">{{ search.title }}</a></dd>
+  <dt>Date</dt>
+  <dd>{{ interview.created_at[:16].replace('T', ' ') }}</dd>
+</dl>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- AI Analysis                                                         -->
+<!-- ------------------------------------------------------------------ -->
+<section class="section" id="analysis-section">
+  <div class="section-header">
+    <h2>AI Analysis</h2>
+    {% if interview.transcript %}
+    <button class="btn btn-sm btn-outline" id="reanalyse-btn"
+            data-interview-id="{{ interview.id }}"
+            {% if not ai_enabled %}disabled title="Set ANTHROPIC_API_KEY to enable"{% endif %}>
+      ✦ Re-analyse
+    </button>
+    {% endif %}
+  </div>
+
+  {% if analysis_error %}
+  <div class="alert alert-error" style="margin-bottom:1rem">
+    Analysis failed: {{ analysis_error }} — you can retry with the Re-analyse button.
+  </div>
+  {% endif %}
+
+  <div id="analysis-content">
+    {% if ai_analysis %}
+
+      {% if ai_analysis._raw is defined %}
+      <!-- Fallback: couldn't parse stored JSON -->
+      <div class="transcript-box font-mono">{{ ai_analysis._raw }}</div>
+
+      {% else %}
+      <!-- Recommendation banner -->
+      {% set rec = ai_analysis.recommendation | default('') %}
+      {% set rec_class = {
+          'Strong Yes': 'strong-yes',
+          'Yes':        'yes',
+          'Maybe':      'maybe',
+          'No':         'no'
+        }.get(rec, 'unknown') %}
+      <div class="recommendation-banner recommendation-banner--{{ rec_class }}">
+        <div class="recommendation-label">Recommendation</div>
+        <div class="recommendation-value">{{ rec or 'N/A' }}</div>
+        {% if ai_analysis.summary %}
+        <p class="recommendation-summary">{{ ai_analysis.summary }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Competency ratings -->
+      {% if ai_analysis.competency_ratings %}
+      <div class="analysis-block-card" style="margin-top:1.5rem">
+        <h3 class="analysis-block-title">Competency Ratings</h3>
+        <div class="competency-rating-list">
+          {% for cr in ai_analysis.competency_ratings %}
+          {% set r_class = {
+              'Strong':       'strong',
+              'Acceptable':   'acceptable',
+              'Weak':         'weak',
+              'Not assessed': 'not-assessed'
+            }.get(cr.rating, 'not-assessed') %}
+          <div class="competency-rating-row">
+            <div class="cr-header">
+              <span class="cr-name">{{ cr.name }}</span>
+              <span class="rating-pill rating-pill--{{ r_class }}">{{ cr.rating }}</span>
+            </div>
+            {% if cr.evidence %}
+            <p class="cr-evidence">{{ cr.evidence }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Strengths / Red flags / Open questions -->
+      <div class="analysis-columns">
+        {% if ai_analysis.strengths %}
+        <div class="analysis-block-card">
+          <h3 class="analysis-block-title analysis-block-title--green">Strengths</h3>
+          <ul class="analysis-list analysis-list--green">
+            {% for s in ai_analysis.strengths %}<li>{{ s }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if ai_analysis.red_flags %}
+        <div class="analysis-block-card">
+          <h3 class="analysis-block-title analysis-block-title--red">Red Flags</h3>
+          <ul class="analysis-list analysis-list--red">
+            {% for f in ai_analysis.red_flags %}<li>{{ f }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        {% if ai_analysis.open_questions %}
+        <div class="analysis-block-card">
+          <h3 class="analysis-block-title">Open Questions</h3>
+          <ul class="analysis-list">
+            {% for q in ai_analysis.open_questions %}<li>{{ q }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+
+      {% endif %}{# end if _raw #}
+
+    {% else %}
+    <!-- No analysis yet -->
+    <div class="no-analysis-state">
+      {% if not interview.transcript %}
+      <p>Add a transcript first, then run analysis.</p>
+      <a href="{{ url_for('interview_edit', interview_id=interview.id) }}" class="btn btn-outline btn-sm">
+        Add Transcript
+      </a>
+      {% elif not ai_enabled %}
+      <p>Set the <code>ANTHROPIC_API_KEY</code> environment variable and restart the server to enable AI analysis.</p>
+      {% else %}
+      <p>No analysis yet.</p>
+      <button class="btn btn-primary btn-sm" id="reanalyse-btn-empty"
+              data-interview-id="{{ interview.id }}">
+        ✦ Analyse with AI
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Follow-up chat                                                      -->
+<!-- ------------------------------------------------------------------ -->
+<section class="section" id="chat-section" data-interview-id="{{ interview.id }}">
+  <h2>Follow-up Questions</h2>
+
+  {% if not ai_enabled %}
+  <div class="ai-notice ai-notice--warn" style="margin-top:.75rem">
+    <span class="ai-notice-icon">⚠</span>
+    Set <code>ANTHROPIC_API_KEY</code> to ask follow-up questions about this interview.
+  </div>
+  {% elif not interview.transcript %}
+  <p class="text-muted" style="margin-top:.75rem">Add a transcript to enable follow-up questions.</p>
+  {% else %}
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-welcome" id="chat-welcome">
+        Ask anything about this interview — e.g.
+        <em>"What evidence did she give for DeFi experience?"</em> or
+        <em>"What's your biggest concern about this candidate?"</em>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" class="chat-input" rows="1"
+                placeholder="Ask a follow-up question… (Enter to send, Shift+Enter for newline)"></textarea>
+      <button class="btn btn-primary" id="chat-send-btn">Send</button>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ------------------------------------------------------------------ -->
+<!-- Transcript                                                          -->
+<!-- ------------------------------------------------------------------ -->
+<section class="section">
+  <div class="section-header">
+    <h2>Transcript</h2>
+    <a href="{{ url_for('interview_edit', interview_id=interview.id) }}" class="btn btn-sm btn-outline">Edit</a>
+  </div>
+  {% if interview.transcript %}
+  <div class="transcript-box">{{ interview.transcript }}</div>
+  {% else %}
+  <p class="text-muted">No transcript recorded.
+    <a href="{{ url_for('interview_edit', interview_id=interview.id) }}">Add one.</a>
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

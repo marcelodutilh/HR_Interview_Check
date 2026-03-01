@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}{% if interview %}Edit{% else %}Log{% endif %} Interview — {{ candidate.name }} — JobSearch{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">All Searches</a>
+  <span>/</span>
+  <a href="{{ url_for('job_search_detail', search_id=search.id) }}">{{ search.title }}</a>
+  <span>/</span>
+  <a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}">{{ candidate.name }}</a>
+  <span>/</span>
+  {% if interview %}<span>Edit Transcript</span>{% else %}<span>Log Interview</span>{% endif %}
+</nav>
+{% endblock %}
+
+{% block back %}
+<div class="page-back">
+  <a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}" class="btn-back">← Back to {{ candidate.name }}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{% if interview %}Edit Transcript{% else %}Log Interview{% endif %}</h1>
+    <p class="text-muted">{{ candidate.name }} · {{ search.title }}</p>
+  </div>
+</div>
+
+{% if competencies %}
+<div class="rubric-reference mb-lg">
+  <div class="rubric-reference-header">
+    Evaluation rubric — expand a competency to see scoring criteria
+  </div>
+  {% for c in competencies %}
+  <details class="rubric-ref-item">
+    <summary>{{ c.name }}</summary>
+    <div class="rubric-ref-levels">
+      <div class="rubric-ref-level rubric-ref-level--strong">
+        <div class="rubric-ref-label">Strong</div>
+        <p>{{ c.strong or 'No description defined.' }}</p>
+      </div>
+      <div class="rubric-ref-level rubric-ref-level--acceptable">
+        <div class="rubric-ref-label">Acceptable</div>
+        <p>{{ c.acceptable or 'No description defined.' }}</p>
+      </div>
+      <div class="rubric-ref-level rubric-ref-level--weak">
+        <div class="rubric-ref-label">Weak</div>
+        <p>{{ c.weak or 'No description defined.' }}</p>
+      </div>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" class="form-card" style="max-width:780px">
+  <div class="form-group">
+    <label for="transcript">Interview Transcript</label>
+    <textarea id="transcript" name="transcript" rows="18"
+              placeholder="Paste the interview transcript here…">{{ values.transcript or '' }}</textarea>
+  </div>
+
+  {% if not interview %}
+  <div class="ai-notice {% if not ai_enabled %}ai-notice--warn{% endif %}">
+    {% if ai_enabled %}
+    <span class="ai-notice-icon">✦</span>
+    Submitting will automatically analyse this transcript with Claude and score each competency.
+    {% else %}
+    <span class="ai-notice-icon">⚠</span>
+    <strong>AI analysis is disabled.</strong>
+    Set the <code>ANTHROPIC_API_KEY</code> environment variable to enable automatic scoring.
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="ai-notice">
+    <span class="ai-notice-icon">ℹ</span>
+    Saving updates the transcript only. Use the <strong>Re-analyse</strong> button on the
+    interview page to regenerate the AI analysis.
+  </div>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">
+      {% if interview %}Save Transcript{% else %}Save & Analyse{% endif %}
+    </button>
+    <a href="{{ url_for('candidate_detail', candidate_id=candidate.id) }}" class="btn btn-outline">Cancel</a>
+  </div>
+</form>
+{% endblock %}

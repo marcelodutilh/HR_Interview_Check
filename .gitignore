@@ -1,0 +1,25 @@
+# Virtual environment
+JobSearch/.venv/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Local database
+JobSearch/jobsearch.db
+
+# Environment and secrets
+.env
+*.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
